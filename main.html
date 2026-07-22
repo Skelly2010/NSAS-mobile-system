@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Transit Route & NSAS System</title>
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+  <style>
+    #map { height: 500px; width: 100%; }
+    .controls { margin: 15px 0; }
+    button {
+      padding: 10px 18px;
+      font-size: 16px;
+      cursor: pointer;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+    }
+    button:hover { background-color: #0056b3; }
+  </style>
+</head>
+<body>
+
+  <h1>Transit Route Announcer</h1>
+  <div id="StopTxt">Current Stop: None</div>
+  <div>Version 0.1</div>
+
+
+  <!-- Control Buttons -->
+  <div class="controls">
+    <button id="startGpsBtn">📡 Start GPS Tracking</button>
+  </div>
+
+  <!-- Map Container -->
+  <div id="map"></div>
+  <!-- Scripts -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+  <script src="announcer.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
