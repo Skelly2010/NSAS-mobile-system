@@ -1,7 +1,5 @@
-// Initialize the NSAS announcement system pointing to your audio folder
 const nsas = new AnnouncementSystem('./audio/');
 
-// 1. Math helper to calculate distance in meters between two lat/lng coordinates
 function getDistanceInMeters(lat1, lon1, lat2, lon2) {
   const R = 6371000; // Earth radius in meters
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -16,7 +14,6 @@ function getDistanceInMeters(lat1, lon1, lat2, lon2) {
   return R * c; 
 }
 
-// 2. Define your fixed stops array
 const routeStops = [
   {
     name: "PRESTON / ANDERSON",
@@ -50,8 +47,14 @@ const routeStops = [
   }
 ];
 
-// 3. Initialize map (centered near Bayview / Ottawa)
 const map = L.map('map').setView([45.411365, -75.715871], 14);
+let currentStopIndex = 0; 
+let lastannStop = null;
+let stopReached = false;
+let lastStopAnnounced = false;
+
+const stopArriveDis = 75; 
+const stopLeaveDis = 50; 
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19,
@@ -96,29 +99,57 @@ document.getElementById('startGpsBtn').addEventListener('click', (e) => {
     fillOpacity: 0.8
   }).addTo(map);
 
-  navigator.geolocation.watchPosition((position) => {
-    const userLat = position.coords.latitude;
-    const userLng = position.coords.longitude;
-    const stopText = document.getElementById("StopTxt");
+navigator.geolocation.watchPosition((position) => { 
+    const userLat = position.coords.latitude; 
+    const userLng = position.coords.longitude; 
+    const stopText = document.getElementById("StopTxt"); 
+    
+    userMarker.setLatLng([userLat, userLng]); 
+    
+    if (currentStopIndex < routeStops.length) {
+        
+        // Get the single, upcoming stop (Equivalent to stopList[1] in Roblox)
+        const currentStop = routeStops[currentStopIndex];
+        
+        // Calculate distance to this specific upcoming stop
+        const distance = getDistanceInMeters(userLat, userLng, currentStop.latLng.lat, currentStop.latLng.lng); 
+        
+        // --- 1. THE ANNOUNCEMENT LOGIC ---
+        // Instantly announce the stop ahead of time if it hasn't been announced yet
+        if (currentStop !== lastannStop) { 
+            lastannStop = currentStop; 
+            currentStop.announced = true; 
+            nsas.internalAnnounce(currentStop.sounds); 
+            stopText.textContent = "Current Stop: " + currentStop.name; 
+        } 
+        
+        // --- 2. ARRIVAL DETECTION (Roblox: Distance < stopArriveDis) ---
+        if (distance < stopArriveDis) {
+            stopReached = true;
+            // You can trigger arrival text or door open logic here if needed
+        }
+        
+        // --- 3. DEPARTURE DETECTION (Roblox: Distance > stopLeaveDis and stopReached == true) ---
+        // Once the user leaves the stop radius, advance the queue to the next stop
+        if (distance > stopLeaveDis && stopReached === true) {
+            stopReached = false; // Reset for the next stop
+            currentStopIndex++;  // Move to next stop (Equivalent to table.remove(stopIndex, 1))
+            
+            console.log("Left the stop. Next index is: " + currentStopIndex);
+        }
+        
+    } else {
+        // Equivalent to #stopIndex == 0 in Roblox
+        stopText.textContent = "LAST STOP / DERNIER ARRÊT";
+        if (nsas.isRunning == false && !lastStopAnnounced){
+          lastStopAnnounced = true;
+          nsas.internalAnnounce(["LAST-STOP"]); 
+        }
+    }
 
-    // Update GPS marker position on map
-    userMarker.setLatLng([userLat, userLng]);
-
-    // Proximity check (50 meters threshold)
-    routeStops.forEach((stop) => {
-      const distance = getDistanceInMeters(userLat, userLng, stop.latLng.lat, stop.latLng.lng);
-
-      if (distance <= 50 && !stop.announced) {
-        stop.announced = true;
-        nsas.internalAnnounce(stop.sounds);
-        stopText.textContent = "Current Stop: "+stop.name;
-      }
-    });
-  }, (error) => {
-    console.error("GPS error:", error);
-    btn.disabled = false;
-    btn.textContent = "📡 Retry GPS";
-  }, {
-    enableHighAccuracy: true
-  });
+}, (error) => { 
+    console.error("GPS error:", error); 
+    btn.disabled = false; 
+    btn.textContent = "📡 Retry GPS"; 
+}, { enableHighAccuracy: true });
 });
